@@ -30,7 +30,6 @@ Fans search their players, hover dots for details and switch between gameweeks. 
 Cloudflare dashboard → **Workers & Pages → Create → "Looking to deploy Pages?" → Import an existing Git repository** →
 pick `xfanweb`. Project name **`xfandata`**, framework **None**, build command **empty**, build output directory **`public`**.
 Every push redeploys it. Live at **https://xfandata.pages.dev**.
-(`wrangler.jsonc` belongs to an earlier Worker deploy at https://xfanweb.xfan-footballdata.workers.dev; Pages ignores it.)
 
 ### 3. Visitor numbers: Cloudflare Web Analytics
 In the Pages project open **Metrics → Web Analytics → Enable**. No code needed: it shows visitors, page views,
