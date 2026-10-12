@@ -28,7 +28,7 @@ Fans search their players, hover dots for details and switch between gameweeks. 
 
 ### 2. Hosting: Cloudflare Workers (done)
 The `xfanweb` Worker deploys `public/` on every push (settings in `wrangler.jsonc`).
-Live at **https://xfanweb.xfan-footballdata.workers.dev**. Builds and logs: Cloudflare dashboard → Workers & Pages → xfanweb.
+Live at **https://xfandata.dev** (custom domain on the Worker; the backup address is https://xfanweb.xfan-footballdata.workers.dev). Builds and logs: Cloudflare dashboard → Workers & Pages → xfanweb.
 
 ### 3. Visitor numbers: Cloudflare Web Analytics
 Cloudflare dashboard → **Analytics & Logs → Web Analytics → Add a site**, enter the address above, choose the
@@ -41,7 +41,7 @@ devices and where people came from (Instagram shows up as `l.instagram.com`).
 2. Every player someone opens is logged as an event like `player/Haaland`, so the dashboard ranks the most looked-up players.
 
 ### 5. Instagram
-Put `https://xfanweb.xfan-footballdata.workers.dev/?utm_source=instagram` in your bio or story link stickers, so those visits are labelled.
+Put `https://xfandata.dev/?utm_source=instagram` in your bio or story link stickers, so those visits are labelled.
 
 ## Every week
 Nothing to do: the GitHub Action refreshes the data twice a day and Cloudflare redeploys within a minute.
