@@ -251,6 +251,7 @@ const Q = {
   blank: { label: "High ownership, blanked",  color: "var(--orange)",  order: 3 },
 };
 const LABELS_PER_LIST = 10;   // chart names the 10 most owned + the 10 highest scorers
+const TALLY_N = 5;            // players listed under each group
 // order players within each quadrant: the tallies list and the chart labels both follow it
 const RANK = { diff: (a, b) => b.pts - a.pts || a.own - b.own, ret: (a, b) => b.pts - a.pts || b.own - a.own,
                quiet: (a, b) => b.own - a.own || b.pts - a.pts, blank: (a, b) => b.own - a.own || a.pts - b.pts };
@@ -529,7 +530,7 @@ function quads() {
   const rules = { diff: `Under ${d.own_cut}% owned, ${d.pts_cut}+ pts`, ret: `${d.own_cut}%+ owned, ${d.pts_cut}+ pts`,
                   quiet: `Under ${d.own_cut}% owned, ${blank}`, blank: `${d.own_cut}%+ owned, ${blank}` };
   $("quads").innerHTML = Object.entries(Q).sort((a, b) => a[1].order - b[1].order).map(([k, q]) => {
-    const list = vis.filter(p => p.q === k).sort(RANK[k]).slice(0, 4);
+    const list = vis.filter(p => p.q === k).sort(RANK[k]).slice(0, TALLY_N);
     return `<div class="quad"><h2><i style="background:${q.color}"></i>${q.label}</h2>
       <div class="n">${vis.filter(p => p.q === k).length}</div><p class="rule">${rules[k]}</p>
       <ol>${list.map(p => `<li><button type="button" data-id="${p.id}"><img src="${badge(p.team)}" alt=""><span>${p.name}</span>
