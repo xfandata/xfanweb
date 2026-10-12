@@ -16,11 +16,11 @@ Fans search their players, hover dots for details and switch between gameweeks. 
 
 ### 1. Put it on GitHub
 1. Create a free account at github.com.
-2. Click **New repository**, name it `xfpl`, set it to **Public**, and don't add a README.
+2. Click **New repository**, name it `xfanweb`, set it to **Public**, and don't add a README.
 3. In Terminal:
    ```
    cd ~/Desktop/FootData/fpl-quadrants
-   git remote add origin https://github.com/<your-username>/xfpl.git
+   git remote add origin https://github.com/xfandata/xfanweb.git
    git push -u origin main
    ```
 4. In the repo go to **Settings → Actions → General → Workflow permissions**, pick **Read and write permissions**, and save.
@@ -28,10 +28,10 @@ Fans search their players, hover dots for details and switch between gameweeks. 
 
 ### 2. Host it on Cloudflare Pages
 1. Create a free account at dash.cloudflare.com.
-2. **Workers & Pages → Create → Pages → Connect to Git**, and pick the `xfpl` repo.
+2. **Workers & Pages → Create → Pages → Connect to Git**, and pick the `xfanweb` repo.
 3. Build settings: Framework preset **None**, build command **empty**, build output directory **`public`**.
-4. Click **Save and Deploy**. The site goes live at `https://xfpl.pages.dev`
-   (if that name is taken Cloudflare picks another, so change the two `xfpl.pages.dev` links at the top of `public/index.html`).
+4. Click **Save and Deploy**. The site goes live at `https://xfanweb.pages.dev`
+   (if that name is taken Cloudflare picks another, so change the two `xfanweb.pages.dev` links at the top of `public/index.html`).
 
 ### 3. Visitor numbers: Cloudflare Web Analytics
 In the Pages project open **Metrics → Web Analytics → Enable**. No code needed: it shows visitors, page views,
@@ -43,7 +43,7 @@ countries, devices and where people came from (Instagram shows up as `l.instagra
 2. Every player someone opens is logged as an event like `player/Haaland`, so the dashboard ranks the most looked-up players.
 
 ### 5. Instagram
-Put `https://xfpl.pages.dev/?utm_source=instagram` in your bio or story link stickers, so those visits are labelled.
+Put `https://xfanweb.pages.dev/?utm_source=instagram` in your bio or story link stickers, so those visits are labelled.
 
 ## Every week
 Nothing to do: the GitHub Action refreshes the data twice a day and Cloudflare redeploys within a minute.
