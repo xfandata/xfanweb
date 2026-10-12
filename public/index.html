@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>xFPL Quadrants</title>
+<meta name="description" content="Every FPL player's ownership at the gameweek deadline against the points they scored. Search your players, updated every gameweek by @xfandata.">
+<meta name="theme-color" content="#111014">
+<!-- Link previews (Instagram, WhatsApp, X). Change the URLs if your Cloudflare Pages address isn't xfpl.pages.dev -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="xFPL by @xfandata">
+<meta property="og:title" content="xFPL Quadrants: FPL ownership vs points">
+<meta property="og:description" content="Search any player and see who managers owned, and who actually returned. Updated every gameweek.">
+<meta property="og:url" content="https://xfpl.pages.dev/">
+<meta property="og:image" content="https://xfpl.pages.dev/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23D7FF3C'/%3E%3Cpath d='M24 24 L76 76M24 76 L62 38' stroke='%23111014' stroke-width='15' stroke-linecap='round'/%3E%3Ccircle cx='76' cy='24' r='9.5' fill='%23111014'/%3E%3C/svg%3E">
+<!-- GoatCounter: visit counts plus which players people look up (no cookies). Swap "xfpl" for your GoatCounter code. -->
+<script data-goatcounter="https://xfpl.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Barlow:wght@400;600;700&display=swap">
+<style>
+/* Layout: one column. xFPL header (wordmark top right), a search + filter bar, the quadrant chart
+   as the hero on a dark-purple panel, the picked player's card, then a 2x2 tally laid out like the chart.
+   xFPL series from the xFAN design system, a single deliberate dark theme: ink surface with a purple glow
+   top right, pink as the focus colour, cyan second, volt only in the xFAN logo. */
+:root {
+  color-scheme: dark;
+  --surface: #111014;   /* ink */
+  --glow: #200B2B;      /* xfpl-glow */
+  --panel: #0B0410;     /* xfpl-panel */
+  --card: #1C1B21;
+  --grid: #2A2930;
+  --text: #F5F3EE;
+  --mute: #8C8A94;
+  --context: #3F3657;   /* xfpl-context */
+  --pink: #FF4F9A;      /* xfpl-pink: differentials + focus */
+  --cyan: #6EECFC;      /* xfpl-cyan: owned & returned */
+  --orange: #D9650A;    /* series-3: owned, blanked */
+  --volt: #D7FF3C;      /* xFAN logo only */
+  --ink: #111014;
+  --display: Anton, Impact, sans-serif;
+  --label: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: Barlow, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+html { background: var(--surface); }
+body { min-height: 100vh; color: var(--text); font: 400 15px/1.45 var(--body);
+  background: radial-gradient(ellipse 90% 60% at 100% 0%, var(--glow) 0%, rgba(32, 11, 43, .55) 35%, rgba(17, 16, 20, 0) 70%) no-repeat, var(--surface); }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 24px 40px; display: grid; gap: 22px; }
+
+/* Header */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 700 15px/1 var(--label); letter-spacing: .08em; text-transform: uppercase; }
+.kicker .strip { background: var(--cyan); color: var(--ink); padding: 7px 10px 6px; }
+.wordmark { font: 400 30px/1 var(--display); color: var(--text); letter-spacing: .01em; }
+.wordmark span { color: var(--pink); }
+h1 { margin: 4px 0 4px; font: 700 clamp(22px, 3.2vw, 30px)/1.2 var(--body); text-wrap: balance; }
+.sub { margin: 0; color: var(--mute); font-size: 15px; max-width: 75ch; }
+.note { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; padding: 4px 10px; border: 1.5px solid var(--context); border-radius: 4px; font: 600 13px/1.3 var(--body); color: var(--text); }
+.note::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pink); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.search { position: relative; flex: 1 1 320px; min-width: 0; }
+.search input { width: 100%; height: 48px; padding: 0 44px; border: 1.5px solid var(--context); border-radius: 4px; background: var(--panel); color: var(--text); font: 600 16px var(--body); }
+.search input::placeholder { color: var(--mute); font-weight: 400; }
+.search input:focus { outline: none; border-color: var(--pink); box-shadow: 0 0 0 3px rgba(255, 79, 154, .25); }
+.search .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--mute); pointer-events: none; }
+.search .clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; background: none; color: var(--text); font-size: 22px; cursor: pointer; border-radius: 4px; }
+.results { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 4px; list-style: none; background: var(--panel); border: 1.5px solid var(--pink); border-radius: 4px; max-height: 360px; overflow-y: auto; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+.results li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 3px; cursor: pointer; }
+.results li[aria-selected="true"], .results li:hover { background: var(--card); box-shadow: inset 3px 0 0 var(--pink); }
+.results img { width: 28px; height: 28px; object-fit: contain; }
+.results .nm { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results .meta { color: var(--mute); font-size: 13px; font-weight: 400; margin-left: 6px; }
+.results .pts { font: 700 14px var(--body); font-variant-numeric: tabular-nums; }
+.results .empty { display: block; color: var(--mute); cursor: default; }
+.results .empty:hover { background: none; box-shadow: none; }
+.chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.chip { height: 40px; padding: 0 14px; border: 1.5px solid var(--context); border-radius: 4px; background: transparent; color: var(--text); font: 700 15px var(--label); letter-spacing: .06em; cursor: pointer; }
+.chip:hover { border-color: var(--pink); }
+.chip[aria-pressed="true"] { background: var(--pink); border-color: var(--pink); color: var(--ink); }
+.chip:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+select { height: 40px; padding: 0 10px; border: 1.5px solid var(--context); border-radius: 4px; background: var(--panel); color: var(--text); font: 700 15px var(--label); letter-spacing: .06em; cursor: pointer; }
+
+/* Chart */
+.chart-card { position: relative; background: var(--panel); border: 1px solid var(--grid); border-radius: 4px; padding: 14px 10px 6px 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0 12px 8px 16px; font: 600 13px var(--body); color: var(--text); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+#chart { position: relative; touch-action: pan-y; }
+#chart svg { display: block; width: 100%; overflow: visible; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.zoom-band { fill: var(--pink); opacity: .06; }
+.zoom-bracket { fill: none; stroke: var(--pink); stroke-width: 1.4; }
+.zoom-label { fill: var(--pink); font: 700 11.5px var(--body); letter-spacing: .02em; }
+.axis-break { fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; paint-order: stroke; }
+.cut { stroke: var(--pink); stroke-width: 1.4; stroke-dasharray: 5 4; opacity: .85; }
+.tick { fill: var(--mute); font: 400 12px var(--body); font-variant-numeric: tabular-nums; }
+.axis-title { fill: var(--mute); font: 600 12.5px var(--body); }
+.cut-label { fill: var(--pink); font: 700 12px var(--body); }
+.corner { font: 700 clamp(12px, 1.5vw, 16px) var(--label); text-transform: uppercase; letter-spacing: .07em;
+  paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke-linejoin: round; pointer-events: none; }
+.corner.c-ret { fill: var(--cyan); } .corner.c-diff { fill: var(--pink); } .corner.c-blank { fill: var(--orange); } .corner.c-quiet { fill: #A79FC2; }
+.dot { stroke: var(--panel); stroke-width: 1.5; transition: opacity .2s; }
+.dot.q-ret { fill: var(--cyan); } .dot.q-diff { fill: var(--pink); } .dot.q-blank { fill: var(--orange); } .dot.q-quiet { fill: var(--context); stroke-width: 1; }
+.dimmed .dot { opacity: .55; }
+.lbl { fill: var(--text); font: 600 11px var(--body); paint-order: stroke; stroke: var(--panel); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
+.lbl.sel { font-size: 14px; }
+.zero-line { stroke: var(--text); stroke-width: 1.5; opacity: .55; }
+.zero-label { fill: var(--mute); font: 600 11.5px var(--body); }
+.leader { stroke: var(--mute); stroke-width: 0.8; pointer-events: none; }
+.hover-ring { fill: none; stroke: var(--text); stroke-width: 2; pointer-events: none; }
+.sel-dot { fill: var(--text); stroke: var(--pink); stroke-width: 3; }
+.sel-pulse { fill: none; stroke: var(--pink); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: pulse 1.8s ease-out infinite; }
+@keyframes pulse { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sel-pulse { animation: none; opacity: .5; } .dot { transition: none; } }
+.tip { position: absolute; z-index: 10; pointer-events: none; background: var(--card); color: var(--text); border: 1.5px solid var(--pink); padding: 8px 11px; border-radius: 4px; min-width: 150px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); transform: translate(-50%, calc(-100% - 14px)); }
+.tip .row1 { display: flex; align-items: center; gap: 8px; font: 700 15px var(--body); white-space: nowrap; }
+.tip img { width: 22px; height: 22px; object-fit: contain; }
+.tip .row2 { margin-top: 3px; font: 400 13px var(--body); color: var(--mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tip b { color: var(--text); font-weight: 700; }
+
+/* Player card */
+.player { display: grid; grid-template-columns: auto 1fr auto; gap: 16px 18px; align-items: center; background: var(--card); border: 1.5px solid var(--pink); color: var(--text); padding: 18px 20px; border-radius: 4px; }
+.player img { width: 56px; height: 56px; object-fit: contain; }
+.player .who { min-width: 0; }
+.player .full { font: 400 clamp(24px, 4vw, 34px)/1 var(--display); text-transform: uppercase; }
+.player .meta { margin-top: 5px; color: var(--mute); font-size: 14px; }
+.player .close { align-self: start; width: 36px; height: 36px; border: 1.5px solid var(--context); background: none; color: var(--text); border-radius: 4px; font-size: 20px; cursor: pointer; }
+.stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); }
+.stat { background: var(--panel); padding: 10px 12px; }
+.stat .k { font: 700 12px var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.stat .v { font: 400 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stat.hl .v { color: var(--pink); }
+.qchip { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; padding: 3px 9px; border-radius: 4px; background: var(--panel); border: 1px solid var(--context); color: var(--text); font: 700 13px var(--label); letter-spacing: .06em; text-transform: uppercase; }
+.qchip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.player .msg { grid-column: 1 / -1; color: var(--mute); margin: 0; }
+
+/* Quadrant tallies, laid out like the chart */
+.quads { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--grid); border: 1px solid var(--grid); border-radius: 4px; overflow: hidden; }
+.quad { background: var(--panel); padding: 14px 16px 16px; min-width: 0; }
+.quad h2 { margin: 0; display: flex; align-items: center; gap: 8px; font: 700 15px var(--label); letter-spacing: .07em; text-transform: uppercase; }
+.quad h2 i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.quad .n { font: 400 44px/1 var(--display); margin: 8px 0 2px; font-variant-numeric: tabular-nums; }
+.quad .rule { color: var(--mute); font-size: 13px; margin: 0 0 10px; }
+.quad ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.quad button { width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; padding: 5px 6px; border: 0; border-radius: 3px; background: none; color: var(--text); font: 600 14px var(--body); text-align: left; cursor: pointer; }
+.quad button:hover { background: var(--card); box-shadow: inset 3px 0 0 var(--pink); }
+.quad button img { width: 22px; height: 22px; object-fit: contain; }
+.quad button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quad button small { color: var(--mute); font: 400 13px var(--body); font-variant-numeric: tabular-nums; }
+
+/* Table */
+details { border-top: 1px solid var(--grid); padding-top: 12px; }
+summary { cursor: pointer; font: 700 15px var(--label); letter-spacing: .07em; text-transform: uppercase; }
+.table-wrap { overflow-x: auto; margin-top: 12px; max-height: 520px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { position: sticky; top: 0; background: var(--panel); text-align: left; font: 700 13px var(--label); letter-spacing: .06em; text-transform: uppercase; padding: 8px; border-bottom: 1.5px solid var(--pink); cursor: pointer; white-space: nowrap; }
+th.num, td.num { text-align: right; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td img { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; margin-right: 6px; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--card); }
+
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--grid); padding-top: 14px; color: var(--mute); font-size: 13px; }
+footer .brand { display: flex; align-items: center; gap: 8px; font: 400 20px/1 var(--display); color: var(--text); }
+footer .brand svg { width: 28px; height: 28px; display: block; }
+footer .brand span { color: var(--volt); }
+footer a { color: var(--text); font: 700 15px var(--label); letter-spacing: .06em; text-decoration: none; }
+.error { background: var(--card); color: var(--text); padding: 16px; border-radius: 4px; }
+
+@media (max-width: 640px) {
+  .page { padding-inline: 16px; gap: 18px; }
+  .player { padding: 16px; }
+  .player img { width: 44px; height: 44px; }
+  .quad { padding: 12px; }
+  .quad .n { font-size: 34px; }
+  .stat .v { font-size: 24px; }
+}
+</style>
+
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div class="kicker"><span class="strip">Fantasy Premier League</span><span id="kick-gw">Gameweek</span></div>
+    <div class="wordmark" aria-label="xFPL"><span>x</span>FPL</div>
+  </div>
+
+  <header>
+    <h1 id="h1">Ownership vs points</h1>
+    <p class="sub" id="sub">Ownership at the gameweek deadline against points scored that gameweek.</p>
+    <div id="note" class="note" hidden></div>
+  </header>
+
+  <div class="controls">
+    <div class="search" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-owns="results">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Find your player: Salah, Haaland, Palmer…" aria-label="Search players" aria-controls="results" aria-autocomplete="list">
+      <button class="clear" id="clear" type="button" aria-label="Clear search" hidden>×</button>
+      <ul class="results" id="results" role="listbox" hidden></ul>
+    </div>
+    <div class="chips" role="group" aria-label="Position">
+      <button class="chip" type="button" data-pos="ALL" aria-pressed="true">All</button>
+      <button class="chip" type="button" data-pos="GKP" aria-pressed="false">GKP</button>
+      <button class="chip" type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+      <button class="chip" type="button" data-pos="MID" aria-pressed="false">MID</button>
+      <button class="chip" type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+    </div>
+    <select id="gw" aria-label="Gameweek"></select>
+  </div>
+
+  <section id="player" class="player" hidden aria-live="polite"></section>
+
+  <section class="chart-card" aria-label="Ownership vs points chart">
+    <div class="legend" id="legend"></div>
+    <div id="chart"></div>
+    <div class="tip" id="tip" hidden></div>
+  </section>
+
+  <section class="quads" id="quads" aria-label="Quadrant tallies"></section>
+
+  <details id="tbl">
+    <summary>Every player as a table</summary>
+    <div class="table-wrap"><table><thead><tr>
+      <th data-k="name">Player</th><th data-k="team">Team</th><th data-k="pos">Pos</th>
+      <th class="num" data-k="own">Owned</th><th class="num" data-k="pts">Pts</th><th data-k="q">Quadrant</th>
+    </tr></thead><tbody></tbody></table></div>
+  </details>
+
+  <footer>
+    <div class="brand" aria-label="xFAN"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="#D7FF3C"/><path d="M24 24 L76 76" stroke="#111014" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M24 76 L62 38" stroke="#111014" stroke-width="15" stroke-linecap="round" fill="none"/><circle cx="76" cy="24" r="9.5" fill="#111014"/></svg><div><span>x</span>FAN</div></div>
+    <span id="src">Data: Fantasy Premier League</span>
+    <a href="https://www.instagram.com/xfandata/" target="_blank" rel="noopener">@XFANDATA</a>
+  </footer>
+</div>
+
+<script>
+const Q = {
+  diff:  { label: "Low ownership, returned",        color: "var(--pink)",    order: 0 },
+  ret:   { label: "High ownership, returned",       color: "var(--cyan)",    order: 1 },
+  quiet: { label: "Low ownership, blanked",   color: "var(--context)", order: 2 },
+  blank: { label: "High ownership, blanked",  color: "var(--orange)",  order: 3 },
+};
+const LABELS_PER_LIST = 10;   // chart names the 10 most owned + the 10 highest scorers
+// order players within each quadrant: the tallies list and the chart labels both follow it
+const RANK = { diff: (a, b) => b.pts - a.pts || a.own - b.own, ret: (a, b) => b.pts - a.pts || b.own - a.own,
+               quiet: (a, b) => b.own - a.own || b.pts - a.pts, blank: (a, b) => b.own - a.own || a.pts - b.pts };
+const S = { data: null, pos: "ALL", sel: null, hover: null, sort: { k: "pts", dir: -1 }, pts: [] };
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const fold = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ø/g, "o").replace(/ß/g, "ss").toLowerCase();
+const fmtOwn = v => (v < 1 ? v.toFixed(2) : v.toFixed(1)) + "%";
+const badge = t => S.data.teams[t].badge;
+const quad = p => p.own >= S.data.own_cut ? (p.pts >= S.data.pts_cut ? "ret" : "blank") : (p.pts >= S.data.pts_cut ? "diff" : "quiet");
+const jitter = id => Math.abs((Math.sin(id * 12.9898) * 43758.5453) % 1) * 0.25;   // stable upward spread for stacked integer scores, never across a threshold
+const played = () => S.data.players.filter(p => p.min > 0);
+const visible = () => played().filter(p => S.pos === "ALL" || p.pos === S.pos);
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent && parent.appendChild(e); return e; };
+
+async function load(gw) {
+  const res = await fetch(`data/gw${gw}.json`);
+  if (!res.ok) throw new Error(`gw${gw}.json: ${res.status}`);
+  S.data = await res.json();
+  S.data.players.forEach(p => { p.q = quad(p); p.key = fold(`${p.name} ${p.full} ${S.data.teams[p.team].name} ${p.team}`); });
+  if (S.sel && !S.data.players.some(p => p.id === S.sel)) S.sel = null;
+  renderAll();
+}
+
+function header() {
+  const d = S.data;
+  $("kick-gw").textContent = `Gameweek ${d.gw}`;
+  $("h1").textContent = `GW${d.gw} ownership vs points`;
+  $("sub").textContent = `Each dot is a player who played in GW${d.gw}: how many managers owned him at the deadline and what he scored. ` +
+    `Search for a player or hover a dot for details. The lines split players at ${d.own_cut}% ownership and between a blank (${d.pts_cut - 1} pts or fewer) and a return. ` +
+    `${played().length} players · ${d.managers.toLocaleString("en-GB")} managers.`;
+  const note = $("note");
+  note.hidden = d.finished && !d.pending.length;
+  note.textContent = d.pending.length ? `${d.pending.join(", ")} still to play · points provisional` : "Points provisional until FPL confirms bonus";
+  const when = new Date(d.updated);
+  $("src").textContent = `Data: Fantasy Premier League API · updated ${when.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC`;
+  $("legend").innerHTML = Object.entries(Q).sort((a, b) => [1, 0, 3, 2][a[1].order] - [1, 0, 3, 2][b[1].order])
+    .map(([k, q]) => `<span><i style="background:${q.color}"></i>${q.label} <b>${visible().filter(p => p.q === k).length}</b></span>`).join("");
+}
+
+function renderAll() { header(); chart(); quads(); table(); card(); }
+
+/* ---------- chart ---------- */
+function chart() {
+  const wrap = $("chart"), d = S.data, pts = visible();
+  const W = wrap.clientWidth, H = Math.round(Math.max(380, Math.min(640, W * 0.66)));
+  const m = { t: 18, r: 18, b: 66, l: 42 };
+  const all = played();
+  const yMin = Math.min(-1, ...all.map(p => p.pts)) - 1, yMax = Math.max(...all.map(p => p.pts)) + 2;
+  // Piecewise x: 0-10% gets ZOOM of the width, where most players live; 10-100% shares the rest
+  const SPLIT = 10, ZOOM = 0.4, stretch = Math.round((ZOOM / SPLIT) / ((1 - ZOOM) / (100 - SPLIT)));
+  const x = v => m.l + (v <= SPLIT ? (v / SPLIT) * ZOOM : ZOOM + ((v - SPLIT) / (100 - SPLIT)) * (1 - ZOOM)) * (W - m.l - m.r);
+  const y = v => m.t + ((yMax - v) / (yMax - yMin)) * (H - m.t - m.b);
+  wrap.innerHTML = "";
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": `Scatter of ${pts.length} players: ownership against GW${d.gw} points` }, wrap);
+
+  const yStep = yMax - yMin > 16 ? 3 : 2;
+  const xTicks = W < 560 ? [0, 5, 10, 40, 70, 100] : [0, 2, 4, 6, 8, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  // the stretched zone: a faint band, a break mark on the axis and a bracket naming the zoom
+  el("rect", { class: "zoom-band", x: x(0), y: m.t, width: x(SPLIT) - x(0), height: H - m.b - m.t }, svg);
+  const by = H - m.b + 30;
+  el("path", { class: "zoom-bracket", d: `M${x(0)} ${by - 5}V${by}H${x(SPLIT)}V${by - 5}` }, svg);
+  el("text", { class: "zoom-label", x: (x(0) + x(SPLIT)) / 2, y: by + 13, "text-anchor": "middle" }, svg).textContent = `0–${SPLIT}% stretched ${stretch}×`;
+  const ay = H - m.b;
+  el("path", { class: "axis-break", d: `M${x(SPLIT) - 6} ${ay + 5}l5 -10M${x(SPLIT) + 1} ${ay + 5}l5 -10` }, svg);
+  for (const v of xTicks) {
+    el("line", { class: "gridline", x1: x(v), x2: x(v), y1: m.t, y2: H - m.b }, svg);
+    el("text", { class: "tick", x: x(v), y: H - m.b + 18, "text-anchor": "middle" }, svg).textContent = v + "%";
+  }
+  for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax; v += yStep) {
+    el("line", { class: "gridline", x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }, svg);
+    el("text", { class: "tick", x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v;
+  }
+  el("text", { class: "axis-title", x: (x(SPLIT) + W - m.r) / 2, y: H - 22, "text-anchor": "middle" }, svg).textContent = W < 560 ? "Ownership" : `Ownership at the GW${d.gw} deadline (% of managers)`;
+  const yt = el("text", { class: "axis-title", transform: `translate(11 ${(m.t + H - m.b) / 2}) rotate(-90)`, "text-anchor": "middle" }, svg);
+  yt.textContent = `Points in GW${d.gw}`;
+  // zero line: anything under it lost points (cards, own goals, goals conceded)
+  el("line", { class: "zero-line", x1: m.l, x2: W - m.r, y1: y(0), y2: y(0) }, svg);
+  el("text", { class: "zero-label", x: W - m.r - 4, y: y(0) + 14, "text-anchor": "end" }, svg).textContent = "below 0 = minus points";
+
+  // corner names, then the two threshold lines
+  const pad = 10;
+  el("text", { class: "corner c-diff", x: x(0) + pad, y: m.t + 20 }, svg).textContent = Q.diff.label;
+  el("text", { class: "corner c-ret", x: W - m.r - pad, y: m.t + 20, "text-anchor": "end" }, svg).textContent = Q.ret.label;
+  el("text", { class: "corner c-quiet", x: x(0) + pad, y: H - m.b - pad }, svg).textContent = Q.quiet.label;
+  el("text", { class: "corner c-blank", x: W - m.r - pad, y: H - m.b - pad, "text-anchor": "end" }, svg).textContent = Q.blank.label;
+  el("line", { class: "cut", x1: x(d.own_cut), x2: x(d.own_cut), y1: m.t, y2: H - m.b }, svg);
+  const yCut = y(d.pts_cut - 0.5);   // between a blank (pts_cut - 1 or fewer) and a return
+  el("line", { class: "cut", x1: m.l, x2: W - m.r, y1: yCut, y2: yCut }, svg);
+  el("text", { class: "cut-label", x: x(d.own_cut) + 6, y: y(yMin) - 30 }, svg).textContent = `${d.own_cut}% owned`;
+  el("text", { class: "cut-label", x: W - m.r - 4, y: yCut - 6, "text-anchor": "end" }, svg).textContent = `${d.pts_cut}+ pts = returned`;
+  el("text", { class: "cut-label", x: W - m.r - 4, y: yCut + 15, "text-anchor": "end" }, svg).textContent = `${d.pts_cut - 1} pts or fewer = blank`;
+
+  // dots: grey context first so colour sits on top
+  const g = el("g", { class: S.sel ? "dimmed" : "" }, svg);
+  S.pts = pts.map(p => ({ p, cx: x(p.own), cy: y(p.pts + jitter(p.id)) }));
+  [...S.pts].sort((a, b) => (b.p.q === "quiet") - (a.p.q === "quiet") || a.p.pts - b.p.pts)
+    .forEach(o => el("circle", { class: `dot q-${o.p.q}`, cx: o.cx, cy: o.cy, r: o.p.q === "quiet" ? 4 : 5.5 }, g));
+
+  // direct labels: the picked player first, then the 10 most owned and the 10 highest scorers (20 different names);
+  // a label that collides in every position is skipped and the next player in that list is tried
+  const boxes = [...svg.querySelectorAll(".corner")].map(c => c.getBBox());   // player names keep clear of the quadrant names
+  const hit = b => boxes.some(c => b.x < c.x + c.width + 3 && b.x + b.width + 3 > c.x && b.y < c.y + c.height + 1 && b.y + b.height + 1 > c.y)
+    || b.x + b.width > W - m.r || b.x < m.l || b.y < m.t || b.y + b.height > H - m.b;
+  // right, left, above, below the dot; then further out on rings, joined to the dot by a leader line
+  const spots = o => {
+    const near = [[o.cx + 8, o.cy + 4, "start"], [o.cx - 8, o.cy + 4, "end"], [o.cx, o.cy - 9, "middle"], [o.cx, o.cy + 17, "middle"]];
+    const far = [];
+    for (const r of [26, 40, 56, 74, 94]) for (let a = 0; a < 360; a += 30) {
+      const dx = Math.cos(a * Math.PI / 180) * r, dy = Math.sin(a * Math.PI / 180) * r;
+      far.push([o.cx + dx, o.cy + dy + 4, dx > 4 ? "start" : dx < -4 ? "end" : "middle", true]);
+    }
+    return near.concat(far);
+  };
+  const place = (o, cls) => {
+    const t = el("text", { class: `lbl ${cls}` }, svg);
+    t.textContent = `${o.p.name} ${o.p.pts}`;
+    for (const [lx, ly, anchor, lead] of spots(o)) {
+      t.setAttribute("x", lx); t.setAttribute("y", ly); t.setAttribute("text-anchor", anchor);
+      const b = t.getBBox();
+      if (hit(b)) continue;
+      boxes.push(b);
+      if (lead) {   // end the leader at the label's nearest edge
+        const ex = Math.max(b.x, Math.min(o.cx, b.x + b.width)), ey = Math.max(b.y, Math.min(o.cy, b.y + b.height));
+        svg.insertBefore(el("line", { class: "leader", x1: o.cx, y1: o.cy, x2: ex, y2: ey }), t);
+      }
+      return true;
+    }
+    if (cls === "sel") { boxes.push(t.getBBox()); return true; }   // the picked player is always labelled
+    t.remove();
+    return false;
+  };
+  const selO = S.pts.find(o => o.p.id === S.sel);
+  if (selO) {
+    el("circle", { class: "sel-pulse", cx: selO.cx, cy: selO.cy, r: 14 }, svg);
+    el("circle", { class: "sel-dot", cx: selO.cx, cy: selO.cy, r: 8.5 }, svg);
+    place(selO, "sel");
+  }
+  const done = new Set([selO]);
+  const lists = [(a, b) => b.p.own - a.p.own,                       // most owned
+                 (a, b) => b.p.pts - a.p.pts || b.p.own - a.p.own]; // highest scorers
+  for (const order of lists) {
+    let n = 0;
+    for (const o of [...S.pts].sort(order)) {
+      if (n >= LABELS_PER_LIST) break;
+      if (done.has(o)) continue;   // already named by the other list: take the next player instead
+      done.add(o);
+      if (place(o, "")) n++;
+    }
+  }
+
+  svg.querySelectorAll(".corner").forEach(c => svg.appendChild(c));   // quadrant names sit above the dots
+  S.ring = el("circle", { class: "hover-ring", r: 10, visibility: "hidden" }, svg);
+  S.geom = { W, H };
+  svg.addEventListener("pointermove", onMove);
+  svg.addEventListener("pointerdown", onMove);
+  svg.addEventListener("pointerleave", () => setHover(null));
+  svg.addEventListener("click", () => { if (S.hover) select(S.hover.p.id); });
+}
+
+function onMove(e) {
+  const svg = e.currentTarget, r = svg.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (S.geom.W / r.width), my = (e.clientY - r.top) * (S.geom.H / r.height);
+  let best = null, bd = 22 * 22;
+  for (const o of S.pts) { const dd = (o.cx - mx) ** 2 + (o.cy - my) ** 2; if (dd < bd) { bd = dd; best = o; } }
+  setHover(best);
+}
+
+function setHover(o) {
+  S.hover = o;
+  const tip = $("tip");
+  svgCursor(o);
+  if (!o) { tip.hidden = true; S.ring.setAttribute("visibility", "hidden"); return; }
+  S.ring.setAttribute("cx", o.cx); S.ring.setAttribute("cy", o.cy); S.ring.setAttribute("visibility", "visible");
+  const p = o.p, team = S.data.teams[p.team];
+  tip.innerHTML = `<div class="row1"><img src="${team.badge}" alt="">${p.name}</div>
+    <div class="row2">${team.name} · ${p.pos} · £${p.price.toFixed(1)}m</div>
+    <div class="row2"><b>${fmtOwn(p.own)}</b> owned · <b>${p.pts}</b> pts</div>`;
+  tip.hidden = false;
+  const card = tip.parentElement, chartBox = $("chart").getBoundingClientRect(), cardBox = card.getBoundingClientRect();
+  const scale = chartBox.width / S.geom.W;
+  let left = chartBox.left - cardBox.left + o.cx * scale, top = chartBox.top - cardBox.top + o.cy * scale;
+  const half = tip.offsetWidth / 2;
+  left = Math.max(half + 6, Math.min(cardBox.width - half - 6, left));
+  tip.style.left = left + "px";
+  tip.style.top = top + "px";
+  tip.style.transform = top - tip.offsetHeight - 14 < 0 ? "translate(-50%, 18px)" : "translate(-50%, calc(-100% - 14px))";
+}
+function svgCursor(o) { const s = $("chart").querySelector("svg"); if (s) s.style.cursor = o ? "pointer" : "default"; }
+
+/* ---------- selection & search ---------- */
+// GoatCounter event: shows up in the dashboard as a path, so you can see the most looked-up players
+function track(path, title) { try { window.goatcounter?.count?.({ path, title, event: true }); } catch (e) {} }
+function select(id) {
+  S.sel = id;
+  const p = S.data.players.find(q => q.id === id);
+  if (p) track(`player/${p.name}`, `${p.full} (${p.team})`);
+  if (p && S.pos !== "ALL" && p.pos !== S.pos) setPos("ALL", false);
+  $("q").value = p ? p.name : "";
+  $("clear").hidden = !p;
+  closeResults();
+  setHover(null);
+  chart(); card();
+  if (p) $("player").scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+
+function card() {
+  const box = $("player"), p = S.data.players.find(q => q.id === S.sel);
+  box.hidden = !p;
+  if (!p) return;
+  const team = S.data.teams[p.team], gw = S.data.gw;
+  const pendingTeam = S.data.pending.some(f => f.split(" v ").includes(p.team));
+  const head = `<img src="${team.badge}" alt="${team.name}">
+    <div class="who"><div class="full">${p.full}</div>
+      <div class="meta">${team.name} · ${p.pos} · £${p.price.toFixed(1)}m</div>
+      ${p.min > 0 ? `<span class="qchip"><i style="background:${Q[p.q].color}"></i>${Q[p.q].label}</span>` : ""}</div>
+    <button class="close" type="button" aria-label="Close player">×</button>`;
+  const stats = p.min > 0
+    ? `<div class="stats">${[["Owned", fmtOwn(p.own), 1], [`GW${gw} pts`, p.pts, 1], ["Mins", p.min], ["Goals", p.g], ["Assists", p.a], ["Clean sheets", p.cs], ["Bonus", p.bonus]]
+        .map(([k, v, hl]) => `<div class="stat${hl ? " hl" : ""}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`
+    : `<p class="msg">${pendingTeam ? `${team.name} haven't played GW${gw} yet. Check back after the match.` : `Didn't play in GW${gw}.`} Owned by ${fmtOwn(p.own)} of managers at the deadline.</p>`;
+  box.innerHTML = head + stats;
+  box.querySelector(".close").addEventListener("click", () => select(null));
+}
+
+let active = -1, matches = [];
+function search() {
+  const raw = $("q").value.trim(), q = fold(raw);
+  $("clear").hidden = !raw;
+  if (!q) { closeResults(); return; }
+  const scored = S.data.players.filter(p => p.key.includes(q))
+    .map(p => ({ p, s: (fold(p.name).startsWith(q) ? 0 : fold(p.full).split(" ").some(w => w.startsWith(q)) ? 1 : 2) }))
+    .sort((a, b) => a.s - b.s || b.p.own - a.p.own);
+  matches = scored.slice(0, 8).map(o => o.p);
+  active = matches.length ? 0 : -1;
+  drawResults();
+}
+function drawResults() {
+  const ul = $("results");
+  ul.hidden = false;
+  ul.parentElement.setAttribute("aria-expanded", "true");
+  ul.innerHTML = matches.length ? matches.map((p, i) => `<li role="option" id="opt-${p.id}" data-id="${p.id}" aria-selected="${i === active}">
+      <img src="${badge(p.team)}" alt=""><div class="nm">${p.name}<span class="meta">${p.team} · ${p.pos} · ${fmtOwn(p.own)}</span></div>
+      <span class="pts">${p.min > 0 ? p.pts + " pts" : "–"}</span></li>`).join("")
+    : `<li class="empty">No player matches “${$("q").value.trim()}”</li>`;
+  $("q").setAttribute("aria-activedescendant", active >= 0 ? `opt-${matches[active].id}` : "");
+}
+function closeResults() { $("results").hidden = true; $("results").parentElement.setAttribute("aria-expanded", "false"); }
+
+$("q").addEventListener("input", search);
+$("q").addEventListener("focus", () => { if ($("q").value.trim() && !S.sel) search(); });
+$("q").addEventListener("keydown", e => {
+  if ($("results").hidden) return;
+  if (e.key === "ArrowDown") { e.preventDefault(); active = Math.min(matches.length - 1, active + 1); drawResults(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(0, active - 1); drawResults(); }
+  else if (e.key === "Enter" && active >= 0) { e.preventDefault(); select(matches[active].id); }
+  else if (e.key === "Escape") closeResults();
+});
+$("results").addEventListener("pointerdown", e => { const li = e.target.closest("li[data-id]"); if (li) { e.preventDefault(); select(+li.dataset.id); } });
+$("clear").addEventListener("click", () => { $("q").value = ""; select(null); $("q").focus(); });
+document.addEventListener("pointerdown", e => { if (!e.target.closest(".search")) closeResults(); });
+
+/* ---------- position filter & gameweek ---------- */
+function setPos(pos, redraw = true) {
+  S.pos = pos;
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.pos === pos));
+  if (redraw) renderAll();
+}
+document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => setPos(b.dataset.pos)));
+$("gw").addEventListener("change", e => load(+e.target.value).catch(fail));
+
+/* ---------- quadrant tallies ---------- */
+function quads() {
+  const vis = visible(), d = S.data;
+  const blank = `${d.pts_cut - 1} pts or fewer`;
+  const rules = { diff: `Under ${d.own_cut}% owned, ${d.pts_cut}+ pts`, ret: `${d.own_cut}%+ owned, ${d.pts_cut}+ pts`,
+                  quiet: `Under ${d.own_cut}% owned, ${blank}`, blank: `${d.own_cut}%+ owned, ${blank}` };
+  $("quads").innerHTML = Object.entries(Q).sort((a, b) => a[1].order - b[1].order).map(([k, q]) => {
+    const list = vis.filter(p => p.q === k).sort(RANK[k]).slice(0, 4);
+    return `<div class="quad"><h2><i style="background:${q.color}"></i>${q.label}</h2>
+      <div class="n">${vis.filter(p => p.q === k).length}</div><p class="rule">${rules[k]}</p>
+      <ol>${list.map(p => `<li><button type="button" data-id="${p.id}"><img src="${badge(p.team)}" alt=""><span>${p.name}</span>
+        <small>${fmtOwn(p.own)} · ${p.pts} ${Math.abs(p.pts) === 1 ? "pt" : "pts"}</small></button></li>`).join("")}</ol></div>`;
+  }).join("");
+  $("quads").querySelectorAll("button").forEach(b => b.addEventListener("click", () => select(+b.dataset.id)));
+}
+
+/* ---------- table ---------- */
+function table() {
+  const { k, dir } = S.sort;
+  const rows = visible().map(p => ({ ...p, qlabel: Q[p.q].label }))
+    .sort((a, b) => { const A = k === "q" ? a.qlabel : a[k], B = k === "q" ? b.qlabel : b[k]; return (A > B ? 1 : A < B ? -1 : 0) * dir || b.pts - a.pts; });
+  document.querySelector("tbody").innerHTML = rows.map(p => `<tr data-id="${p.id}"><td><img src="${badge(p.team)}" alt="">${p.name}</td>
+    <td>${p.team}</td><td>${p.pos}</td><td class="num">${fmtOwn(p.own)}</td><td class="num">${p.pts}</td><td>${p.qlabel}</td></tr>`).join("");
+}
+document.querySelectorAll("th").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.k;
+  S.sort = { k, dir: S.sort.k === k ? -S.sort.dir : (k === "own" || k === "pts" ? -1 : 1) };
+  table();
+}));
+document.querySelector("tbody").addEventListener("click", e => { const tr = e.target.closest("tr"); if (tr) { select(+tr.dataset.id); window.scrollTo({ top: 0, behavior: "smooth" }); } });
+
+/* ---------- boot ---------- */
+function fail(err) {
+  $("chart").innerHTML = `<div class="error">Couldn't load the gameweek data (${err.message}). Refresh to try again.</div>`;
+}
+let rt, lastW = 0;
+new ResizeObserver(([e]) => {
+  const w = Math.round(e.contentRect.width);
+  if (w === lastW) return;
+  lastW = w; clearTimeout(rt); rt = setTimeout(() => S.data && chart(), 80);
+}).observe($("chart"));
+
+(async () => {
+  try {
+    const { gameweeks } = await (await fetch("data/gameweeks.json")).json();
+    $("gw").innerHTML = gameweeks.slice().reverse().map(g => `<option value="${g}">GW${g}</option>`).join("");
+    await load(gameweeks[gameweeks.length - 1]);
+  } catch (err) { fail(err); }
+})();
+</script>
+</body>
+</html>
