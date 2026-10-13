@@ -310,6 +310,7 @@ function chart() {
   const x = v => m.l + (v <= SPLIT ? (v / SPLIT) * ZOOM : ZOOM + ((v - SPLIT) / (100 - SPLIT)) * (1 - ZOOM)) * (W - m.l - m.r);
   const y = v => m.t + ((yMax - v) / (yMax - yMin)) * (H - m.t - m.b);
   wrap.innerHTML = "";
+  S.hover = null; $("tip").hidden = true;   // a redraw drops any open card: its dot has moved
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": `Scatter of ${pts.length} players: ownership against GW${d.gw} points` }, wrap);
 
   const yStep = yMax - yMin > 16 ? 3 : 2;
@@ -418,18 +419,24 @@ function chart() {
   svg.querySelectorAll(".corner").forEach(c => svg.appendChild(c));   // quadrant names sit above the dots
   S.ring = el("circle", { class: "hover-ring", r: 10, visibility: "hidden" }, svg);
   S.geom = { W, H };
-  svg.addEventListener("pointermove", onMove);
-  svg.addEventListener("pointerdown", onMove);
-  svg.addEventListener("pointerleave", () => setHover(null));
-  svg.addEventListener("click", () => { if (S.hover) select(S.hover.p.id); });
+  // mouse: the card follows the pointer and a click opens the player.
+  // touch: a tap pins that player's card until you tap empty space, anywhere else on the page, or another dot.
+  let pointer = "mouse";
+  svg.addEventListener("pointerdown", e => { pointer = e.pointerType; });
+  svg.addEventListener("pointermove", e => { if (e.pointerType === "mouse") setHover(nearest(e, 22)); });
+  svg.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") setHover(null); });
+  svg.addEventListener("click", e => {
+    if (pointer === "mouse") { if (S.hover) select(S.hover.p.id); return; }
+    setHover(nearest(e, 28));
+  });
 }
 
-function onMove(e) {
-  const svg = e.currentTarget, r = svg.getBoundingClientRect();
+function nearest(e, radius) {
+  const r = e.currentTarget.getBoundingClientRect();
   const mx = (e.clientX - r.left) * (S.geom.W / r.width), my = (e.clientY - r.top) * (S.geom.H / r.height);
-  let best = null, bd = 22 * 22;
+  let best = null, bd = radius * radius;
   for (const o of S.pts) { const dd = (o.cx - mx) ** 2 + (o.cy - my) ** 2; if (dd < bd) { bd = dd; best = o; } }
-  setHover(best);
+  return best;
 }
 
 function setHover(o) {
@@ -524,7 +531,10 @@ $("q").addEventListener("keydown", e => {
 });
 $("results").addEventListener("pointerdown", e => { const li = e.target.closest("li[data-id]"); if (li) { e.preventDefault(); select(+li.dataset.id); } });
 $("clear").addEventListener("click", () => { $("q").value = ""; select(null); $("q").focus(); });
-document.addEventListener("pointerdown", e => { if (!e.target.closest(".search")) closeResults(); });
+document.addEventListener("pointerdown", e => {
+  if (!e.target.closest(".search")) closeResults();
+  if (S.hover && !e.target.closest("#chart svg")) setHover(null);   // a tap outside the chart closes a pinned card
+});
 
 /* ---------- position filter & gameweek ---------- */
 function setPos(pos, redraw = true) {
